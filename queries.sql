@@ -83,3 +83,67 @@ WITH weekdays_income_with_numbers AS (
     day_of_week,
     FLOOR(income) AS income
 FROM weekdays_income_with_numbers;
+
+
+-- age_groups
+SELECT
+    (
+        CASE
+            WHEN
+                c.age >= 16
+                AND c.age <= 25 THEN '16-25'
+            WHEN
+                c.age >= 26
+                AND c.age <= 40 THEN '26-40'
+            ELSE '40+'
+        END
+    ) AS age_category,
+    COUNT(c.age) AS age_count
+FROM
+    customers AS c
+GROUP BY 1
+ORDER BY 1;
+
+-- customers_by_month
+SELECT
+    TO_CHAR(s.sale_date, 'yyyy-mm') AS selling_month,
+    COUNT(DISTINCT s.customer_id) AS total_customers,
+    FLOOR(SUM(s.quantity * p.price)) AS income
+FROM
+    sales AS s
+INNER JOIN products AS p ON s.product_id = p.product_id
+GROUP BY 1;
+
+-- special_offer
+WITH sales_with_number AS (
+    SELECT
+        c.customer_id,
+        s.sale_date,
+        p.price,
+        (c.first_name || ' ' || c.last_name) AS customer,
+        (e.first_name || ' ' || e.last_name) AS seller,
+        ROW_NUMBER()
+            OVER (
+                PARTITION BY c.customer_id
+                ORDER BY s.sale_date ASC
+            )
+            AS rn
+    FROM
+        customers AS c
+    INNER JOIN sales AS s
+        ON
+            c.customer_id = s.customer_id
+    INNER JOIN products AS p
+        ON
+            s.product_id = p.product_id
+    INNER JOIN employees AS e ON
+        s.sales_person_id = e.employee_id
+)
+
+SELECT
+    swn.customer,
+    swn.sale_date,
+    swn.seller
+FROM sales_with_number AS swn
+WHERE swn.rn = 1 AND swn.price = 0
+ORDER BY 1;
