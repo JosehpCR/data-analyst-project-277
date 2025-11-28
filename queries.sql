@@ -1,3 +1,4 @@
+-- total_customers
 SELECT COUNT(*) AS customers_count
 FROM customers;
 
